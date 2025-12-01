@@ -13,6 +13,9 @@ Route::get('/user', function (Request $request) {
 // Disponibilidad pública por médico (semana actual)
 Route::get('/doctors/{doctor}/availability', [DoctorController::class, 'availability']);
 
+// API: obtener citas de un médico en una semana (start = YYYY-MM-DD primer día de la semana)
+Route::get('/doctors/{doctor}/appointments', [\App\Http\Controllers\AppointmentController::class, 'appointmentsForDoctor']);
+
 // API: comprobar si paciente existe por documento
 Route::get('/patients/check', function (Request $request) {
     $document = $request->query('document');

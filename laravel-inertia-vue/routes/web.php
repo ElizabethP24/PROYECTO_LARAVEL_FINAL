@@ -6,6 +6,7 @@ use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\DashboardController;
 use Inertia\Inertia;
 
 // Public agenda (landing) — handled by AgendaController and accessible without login
@@ -25,16 +26,17 @@ Route::middleware([
     'verified',
 ])->group(function () {
 
-    // Dashboard route expected by Jetstream/Fortify
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
     Route::get('/home', [AppointmentController::class, 'adminHome'])->name('home');
 
     Route::resource('patients', PatientController::class);
     Route::resource('doctors', DoctorController::class)->scoped(['doctor' => 'slug']);
+
+    // Página de agenda por médico (ruta administrativa)
+    Route::get('/doctors/{doctor}/agenda', [DoctorController::class, 'showAgenda'])->name('doctors.agenda');
 
     Route::resource('appointments', AppointmentController::class);
     Route::post('/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])->name('appointments.approve');

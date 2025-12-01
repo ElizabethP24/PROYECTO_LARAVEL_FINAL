@@ -5,52 +5,89 @@ import { BarChart, PieChart, LineChart } from 'vue-chart-3'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
 
-// ────────────────────────────────
-// Datos de ejemplo (pueden venir desde Laravel por props)
-// ────────────────────────────────
-const citasPorEspecialidad = ref({
+// Accept props from Laravel (Inertia). Fall back to example values when not provided.
+const props = defineProps({
+    citasPorEspecialidad: Object,
+    citasPorFecha: Object,
+    estadoCitas: Object,
+    ocupacionMedico: Object,
+})
+
+const citasPorEspecialidad = ref(props.citasPorEspecialidad ?? {
     labels: ['Cardiología', 'Pediatría', 'Neurología'],
     datasets: [
         {
-        label: 'Cantidad de citas',
-        data: [10, 5, 8],
-        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+            label: 'Cantidad de citas',
+            data: [10, 5, 8],
+            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
         },
     ],
-    })
+})
 
-    const citasPorFecha = ref({
+const citasPorFecha = ref(props.citasPorFecha ?? {
     labels: ['2025-11-01', '2025-11-02', '2025-11-03'],
     datasets: [
         {
-        label: 'Citas diarias',
-        data: [4, 7, 3],
-        backgroundColor: '#f6c23e',
+            label: 'Citas diarias',
+            data: [4, 7, 3],
+            backgroundColor: '#f6c23e',
+            fill: false,
         },
     ],
-    })
+})
 
-    const estadoCitas = ref({
+// Force Y axis from 0 to 20 for citasPorFecha and show integer ticks
+const citasPorFechaOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: {
+            beginAtZero: true,
+            min: 0,
+            suggestedMax: 20,
+            ticks: {
+                stepSize: 1,
+                callback: function(value) { return Number.isInteger(value) ? value : null }
+            }
+        }
+    }
+}
+
+const estadoCitas = ref(props.estadoCitas ?? {
     labels: ['Aprobadas', 'Pendientes', 'Rechazadas'],
     datasets: [
         {
-        label: 'Estado de citas',
-        data: [12, 4, 2],
-        backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'],
+            label: 'Estado de citas',
+            data: [12, 4, 2],
+            backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'],
         },
     ],
-    })
+})
 
-    const ocupacionMedico = ref({
+// Expect controller to provide percentages (0-100). Fallback uses example percentages.
+const ocupacionMedico = ref(props.ocupacionMedico ?? {
     labels: ['Dr. Pérez', 'Dra. Gómez', 'Dr. Ruiz'],
     datasets: [
         {
-        label: '% de ocupación',
-        data: [90, 60, 75],
-        backgroundColor: ['#4e73df', '#36b9cc', '#1cc88a'],
+            label: 'Ocupación (%)',
+            data: [75, 50, 80],
+            backgroundColor: ['#4e73df', '#36b9cc', '#1cc88a'],
         },
     ],
-    })
+})
+
+const ocupacionOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: {
+            beginAtZero: true,
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 10 }
+        }
+    }
+}
     </script>
 
     <template>
@@ -71,7 +108,7 @@ const citasPorEspecialidad = ref({
         <!-- Citas por Fecha -->
         <div class="bg-white shadow-lg rounded-2xl p-4">
             <h3 class="font-bold text-yellow-600 mb-3">Citas por fecha</h3>
-            <LineChart :chart-data="citasPorFecha" />
+            <LineChart :chart-data="citasPorFecha" :chart-options="citasPorFechaOptions" style="height:220px;" />
         </div>
 
         <!-- Estado de las Citas -->
@@ -83,7 +120,7 @@ const citasPorEspecialidad = ref({
         <!-- Ocupación por Médico -->
         <div class="bg-white shadow-lg rounded-2xl p-4">
             <h3 class="font-bold text-indigo-600 mb-3">Ocupación por médico</h3>
-            <BarChart :chart-data="ocupacionMedico" />
+            <BarChart :chart-data="ocupacionMedico" :chart-options="ocupacionOptions" style="height:260px;" />
         </div>
         </div>
     </AppLayout>

@@ -135,6 +135,34 @@ class DoctorController extends Controller
     }
 
     /**
+     * Mostrar la página de agenda para un médico (administrativo).
+     * Renderiza la Single File Component `Doctors/Agenda` y pasa el modelo `doctor`.
+     */
+    public function showAgenda(Doctor $doctor)
+    {
+        $doctors = Doctor::where('status', 'Activo')->get()->map(function ($d) {
+            return [
+                'id' => $d->id_doctor,
+                'name' => $d->name,
+                'slug' => $d->slug ?? null,
+            ];
+        });
+
+        // Provide work hours and slot duration to the frontend so it can render the calendar grid
+        $workStart = env('WORK_START', '08:00');
+        $workEnd = env('WORK_END', '17:00');
+        $slotMinutes = (int) env('APPOINTMENT_DURATION_MINUTES', 20);
+
+        return Inertia::render('Doctors/Agenda', [
+            'doctor' => $doctor,
+            'doctors' => $doctors,
+            'work_start' => $workStart,
+            'work_end' => $workEnd,
+            'slot_minutes' => $slotMinutes,
+        ]);
+    }
+
+    /**
      * Devuelve la disponibilidad semanal del médico (API).
      * Retorna un array donde la clave es la fecha YYYY-MM-DD y el valor es lista de horas disponibles.
      */

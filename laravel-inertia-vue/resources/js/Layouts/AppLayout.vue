@@ -97,6 +97,12 @@ const logout = () => {
             <Link :href="route('dashboard')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">🏠 Panel de control</Link>
             <Link :href="route('patients.index')" :active="route().current('patients.index')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">👤 Pacientes</Link>
             <Link :href="route('doctors.index')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">💊 Médicos</Link>
+            <!-- Link dinámico a la agenda de un médico: si hay lista de médicos en las props, enlaza a la agenda del primero; si no, enlaza al listado de médicos -->
+            <Link v-if="$page.props && $page.props.doctors && $page.props.doctors.length"
+                :href="route('doctors.agenda', { doctor: $page.props.doctors[0].slug })"
+                class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">🩺 Agenda Médico</Link>
+            <Link v-else :href="route('doctors.index')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">🩺 Agenda Médico</Link>
+
             <Link :href="route('appointments.index')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">📋 Citas</Link>
             <Link :href="route('agenda.index')" class="block py-2 px-3 rounded-md hover:bg-slate-800 transition">🗓️ Agenda</Link>
             </nav>

@@ -225,5 +225,54 @@ class AppointmentController extends Controller
 
         return response()->json(['status' => $appointment->status]);
     }
+
+    /**
+     * Return appointments for a given doctor over a week starting at ?start=YYYY-MM-DD
+     * Accepts doctor id or slug. Returns object keyed by date => array of appointments.
+     */
+    public function appointmentsForDoctor(Request $request, $doctorParam)
+    {
+        // Resolve doctor by id or slug.
+        // Avoid comparing a textual slug against a bigint column (Postgres will error).
+        if ($doctorParam instanceof Doctor) {
+            $doctor = $doctorParam;
+        } else {
+            // If the param is numeric, search by id; otherwise search by slug.
+            if (is_numeric($doctorParam)) {
+                $doctor = Doctor::where('id_doctor', (int) $doctorParam)->firstOrFail();
+            } else {
+                $doctor = Doctor::where('slug', $doctorParam)->firstOrFail();
+            }
+        }
+
+        $start = $request->query('start');
+        try {
+            $startDate = $start ? \Carbon\Carbon::parse($start)->startOfDay() : \Carbon\Carbon::today()->startOfWeek(\Carbon\Carbon::MONDAY);
+        } catch (\Exception $e) {
+            $startDate = \Carbon\Carbon::today()->startOfWeek(\Carbon\Carbon::MONDAY);
+        }
+
+        $endDate = $startDate->copy()->addDays(5)->endOfDay(); // Monday..Saturday (6 days)
+
+        $appts = Appointment::with('patient')
+            ->where('id_doctor', $doctor->id_doctor)
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        $grouped = [];
+        foreach ($appts as $a) {
+            $date = $a->date;
+            if (!isset($grouped[$date])) $grouped[$date] = [];
+            $grouped[$date][] = [
+                'id' => $a->getKey(),
+                'time' => $a->time,
+                'status' => $a->status,
+                'patient' => $a->patient ? ['name' => $a->patient->name, 'document' => $a->patient->document] : null,
+                'notes' => $a->notes ?? null,
+            ];
+        }
+
+        return response()->json($grouped);
+    }
 }
 
