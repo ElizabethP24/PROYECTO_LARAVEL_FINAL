@@ -14,14 +14,10 @@ use Inertia\Inertia;
 
 class AppointmentController extends Controller
 {
-    /**
-     * Display a listing of appointments (admin view).
-     */
+
     public function index()
     {
         $appointments = Appointment::with(['patient', 'doctor'])->orderBy('date', 'desc')->orderBy('time', 'desc')->get();
-
-        // Normalizar datos para la vista Inertia
         $data = $appointments->map(function ($a) {
             return [
                 'id' => $a->getKey(),
@@ -33,24 +29,21 @@ class AppointmentController extends Controller
                 'doctor' => $a->doctor ? ['name' => $a->doctor->name] : null,
             ];
         });
-
         return \Inertia\Inertia::render('Appointments/Index', [
             'appointments' => $data,
         ]);
     }
     /**
-     * Formulario público para confirmar datos y reservar (GET /appointments/new?doctor={slug}&start={datetime})
+     * Formulario público para confirmar datos y reservar cita.
      */
     public function createPublic(Request $request)
     {
         $slug = $request->query('doctor');
         $start = $request->query('start');
-
         $doctor = null;
         if ($slug) {
             $doctor = Doctor::where('slug', $slug)->first();
         }
-
         return Inertia::render('Appointments/New', [
             'doctor' => $doctor,
             'start' => $start,
@@ -58,25 +51,11 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Admin home: resumen de pendientes y próximas confirmadas.
-     */
-    public function adminHome()
-    {
-        $pending = Appointment::where('status', 'pending')->count();
-        $upcoming = Appointment::where('status', 'approved')->where('date', '>=', date('Y-m-d'))->count();
-
-        return Inertia::render('Home', [
-            'pending' => $pending,
-            'upcoming' => $upcoming,
-        ]);
-    }
-    /**
-     * Store a newly created appointment (public).
+     * Crear cita
      */
     public function store(Request $request)
     {
         $data = $request->only(['doctor_id', 'date', 'time', 'document']);
-
         $validator = Validator::make($data, [
             'doctor_id' => ['required', 'integer', 'exists:doctors,id_doctor'],
             'date' => ['required', 'date'],
@@ -99,7 +78,6 @@ class AppointmentController extends Controller
             ->where('time', $data['time'])
             ->whereIn('status', ['pending', 'approved'])
             ->exists();
-
         if ($exists) {
             return back()->with('error', 'El horario seleccionado ya no está disponible.')->withInput();
         }
@@ -111,7 +89,6 @@ class AppointmentController extends Controller
         );
 
         $doctor = Doctor::find($data['doctor_id']);
-
         $appointment = Appointment::create([
             'id_patient' => $patient->id_patient ?? $patient->getKey(),
             'id_doctor' => $doctor->id_doctor,
@@ -120,59 +97,23 @@ class AppointmentController extends Controller
             'time' => $data['time'],
             'status' => 'pending',
         ]);
-
-        // Enviar correo de notificación si paciente tiene email
         if (!empty($patient->email)) {
             try {
                 Mail::to($patient->email)->send(new AppointmentNotification($appointment, 'pending'));
             } catch (\Exception $e) {
-                // Log or ignore for now - do not break user flow
-                // logger()->error('Mail send failed: '.$e->getMessage());
+                logger()->error('Mail send failed: '.$e->getMessage());
             }
         }
-
-        return redirect()->back()->with('success', 'Cita creada correctamente. Revise su correo si proporcionó uno.');
+        return redirect()->back()->with('success', 'Cita creada correctamente. Revise su correo para la confirmación.');
     }
 
-    /**
-     * Public wrapper for store so the route can point explicitly to `storePublic`.
-     * This reuses the same validation and creation logic from `store`.
-     */
     public function storePublic(Request $request)
     {
         return $this->store($request);
     }
 
     /**
-     * Update an appointment (admin).
-     */
-    public function update(Request $request, $id)
-    {
-        $appointment = Appointment::findOrFail($id);
-
-        $data = $request->only(['date', 'time', 'notes']);
-        $validator = Validator::make($data, [
-            'date' => ['required', 'date'],
-            'time' => ['required', 'date_format:H:i'],
-        ], [
-            'date.required' => 'Seleccione una fecha.',
-            'time.required' => 'Seleccione una hora.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $appointment->date = $data['date'];
-        $appointment->time = $data['time'];
-        if (array_key_exists('notes', $data)) $appointment->notes = $data['notes'];
-        $appointment->save();
-
-        return response()->json(['appointment' => $appointment]);
-    }
-
-    /**
-     * Remove the specified appointment.
+     * Eliminar cita
      */
     public function destroy($id)
     {
@@ -181,25 +122,23 @@ class AppointmentController extends Controller
         return response()->json(['deleted' => true]);
     }
 
-    /** Approve appointment */
+    /** Aprobar cita */
     public function approve($id)
     {
         $appointment = Appointment::findOrFail($id);
         $appointment->status = 'approved';
         $appointment->save();
-        // Notify patient if email available
         if ($appointment->patient && !empty($appointment->patient->email)) {
             try {
                 Mail::to($appointment->patient->email)->send(new AppointmentNotification($appointment, 'approved'));
             } catch (\Exception $e) {
-                // logger()->error('Mail send failed: '.$e->getMessage());
+                logger()->error('Mail send failed: '.$e->getMessage());
             }
         }
-
         return response()->json(['status' => $appointment->status]);
     }
 
-    /** Complete appointment */
+    /** Completar cita */
     public function complete($id)
     {
         $appointment = Appointment::findOrFail($id);
@@ -208,57 +147,47 @@ class AppointmentController extends Controller
         return response()->json(['status' => $appointment->status]);
     }
 
-    /** Deny (reject) appointment */
+    /** Rechazar cita */
     public function deny($id)
     {
         $appointment = Appointment::findOrFail($id);
         $appointment->status = 'rejected';
         $appointment->save();
-        // Notify patient if email available
         if ($appointment->patient && !empty($appointment->patient->email)) {
             try {
                 Mail::to($appointment->patient->email)->send(new AppointmentNotification($appointment, 'rejected'));
             } catch (\Exception $e) {
-                // logger()->error('Mail send failed: '.$e->getMessage());
+                logger()->error('Mail send failed: '.$e->getMessage());
             }
         }
-
         return response()->json(['status' => $appointment->status]);
     }
 
     /**
-     * Return appointments for a given doctor over a week starting at ?start=YYYY-MM-DD
-     * Accepts doctor id or slug. Returns object keyed by date => array of appointments.
+     * Citas por medico cada semana (API)
      */
     public function appointmentsForDoctor(Request $request, $doctorParam)
     {
-        // Resolve doctor by id or slug.
-        // Avoid comparing a textual slug against a bigint column (Postgres will error).
         if ($doctorParam instanceof Doctor) {
             $doctor = $doctorParam;
         } else {
-            // If the param is numeric, search by id; otherwise search by slug.
             if (is_numeric($doctorParam)) {
                 $doctor = Doctor::where('id_doctor', (int) $doctorParam)->firstOrFail();
             } else {
                 $doctor = Doctor::where('slug', $doctorParam)->firstOrFail();
             }
         }
-
         $start = $request->query('start');
         try {
             $startDate = $start ? \Carbon\Carbon::parse($start)->startOfDay() : \Carbon\Carbon::today()->startOfWeek(\Carbon\Carbon::MONDAY);
         } catch (\Exception $e) {
             $startDate = \Carbon\Carbon::today()->startOfWeek(\Carbon\Carbon::MONDAY);
         }
-
-        $endDate = $startDate->copy()->addDays(5)->endOfDay(); // Monday..Saturday (6 days)
-
+        $endDate = $startDate->copy()->addDays(5)->endOfDay();
         $appts = Appointment::with('patient')
             ->where('id_doctor', $doctor->id_doctor)
             ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
-
         $grouped = [];
         foreach ($appts as $a) {
             $date = $a->date;
@@ -271,7 +200,6 @@ class AppointmentController extends Controller
                 'notes' => $a->notes ?? null,
             ];
         }
-
         return response()->json($grouped);
     }
 }

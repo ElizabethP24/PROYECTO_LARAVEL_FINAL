@@ -10,9 +10,7 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the dashboard with aggregated data for charts.
-     */
+
     public function index(Request $request)
     {
         // Citas por especialidad
@@ -95,10 +93,8 @@ class DashboardController extends Controller
         foreach ($doctors as $d) {
             $total = (int) $d->appointments_count;
             $appr = (int) $d->approved_count;
-            // occupancy = percentage of appointments that are approved (agendadas)
             $percentApproved[] = $total > 0 ? (int) round(($appr / $total) * 100) : 0;
         }
-
         $ocupacionMedico = [
             'labels' => $labels,
             'datasets' => [
@@ -109,7 +105,6 @@ class DashboardController extends Controller
                 ],
             ],
         ];
-
         return Inertia::render('Dashboard', compact('citasPorEspecialidad', 'citasPorFecha', 'estadoCitas', 'ocupacionMedico'));
     }
 }

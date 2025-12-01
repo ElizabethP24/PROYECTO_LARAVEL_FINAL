@@ -44,7 +44,9 @@ class Doctor extends Model
     protected static function booted()
     {
         static::creating(function ($doctor) {
-            $doctor->slug = Str::slug($doctor->name . '-' . uniqid());
+            if (empty($doctor->slug)) {
+                $doctor->slug = Str::slug($doctor->name . '-' . uniqid());
+            }
         });
     }
 

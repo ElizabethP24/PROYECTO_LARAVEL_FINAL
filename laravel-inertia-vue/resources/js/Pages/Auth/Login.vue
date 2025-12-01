@@ -13,6 +13,10 @@ defineProps({
     status: String,
 });
 
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const form = useForm({
     email: '',
     password: '',
@@ -21,6 +25,7 @@ const form = useForm({
 
 const submit = () => {
     form.transform(data => ({
+        _token: csrf,
         ...data,
         remember: form.remember ? 'on' : '',
     })).post(route('login'), {
@@ -42,6 +47,7 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit">
+            <input type="hidden" name="_token" :value="csrf" />
             <div>
                 <InputLabel for="email" value="Email" />
                 <TextInput

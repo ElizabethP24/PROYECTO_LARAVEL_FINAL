@@ -79,14 +79,11 @@ const exportToPDF = () => {
     const createPatient = () => {
     router.post(route('patients.store'), newPatient.value, {
             onSuccess: () => {
-                // Close create modal and show success modal
                 showCreateModal.value = false
                 showResponse('success', 'Paciente creado correctamente.')
-                // reset form
                 Object.assign(newPatient.value, { name: '', document: '', email: '', eps: '' })
             },
             onError: (errors) => {
-                // errors is an object of validation messages
                 const msgs = Object.values(errors).flat().join('\n')
                 showResponse('error', msgs || 'Error al crear paciente.')
             }
@@ -123,10 +120,6 @@ const exportToPDF = () => {
             }
     })
     }
-
-    // server-side export removed: using client-side jsPDF (exportToPDF)
-
-        // Response modal state and helpers
         const showResponseModal = ref(false)
         const responseType = ref('success')
         const responseMessage = ref('')
@@ -147,8 +140,6 @@ const exportToPDF = () => {
     <template>
     <AppLayout title="Gestión de Pacientes">
         <Head title="Pacientes" />
-
-        <!-- ✅ MODAL DE NOTIFICACIÓN FLASH -->
         <transition name="fade">
         <div
             v-if="showFlashModal"
@@ -162,8 +153,6 @@ const exportToPDF = () => {
             </div>
         </div>
         </transition>
-
-        <!-- Contenido principal -->
         <div class="p-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-700">Gestión de Pacientes</h1>
@@ -174,8 +163,6 @@ const exportToPDF = () => {
             <i class="fa fa-user-plus mr-2"></i> Nuevo Paciente
             </button>
         </div>
-
-        <!-- Tabla -->
         <div class="bg-white shadow rounded-lg p-4">
             <div id="listaPacientes" class="card shadow mt-4"></div>
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -198,7 +185,6 @@ const exportToPDF = () => {
                 <td class="px-4 py-2">{{ p.id_patient }}</td>
                 <td class="px-4 py-2">{{ p.name }}</td>
                 <td class="px-4 py-2">{{ p.document }}</td>
-
                 <td class="px-4 py-2">{{ p.email }}</td>
                 <td class="px-4 py-2">{{ p.eps }}</td>
                 <td class="px-4 py-2 text-center space-x-2">
@@ -221,8 +207,6 @@ const exportToPDF = () => {
         </div>
         </div>
 
-        <!-- Modales CRUD -->
-        <!-- Crear -->
         <div
         v-if="showCreateModal"
         @click.self="closeAllModals"
@@ -248,8 +232,6 @@ const exportToPDF = () => {
             </div>
         </div>
         </div>
-
-        <!-- Editar -->
         <div
         v-if="showEditModal"
         @click.self="closeAllModals"
@@ -275,7 +257,6 @@ const exportToPDF = () => {
         </div>
         </div>
 
-        <!-- Eliminar -->
         <div
         v-if="showDeleteModal"
         @click.self="closeAllModals"
@@ -294,10 +275,9 @@ const exportToPDF = () => {
             <button @click="closeAllModals" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
             <button @click="deletePatient" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Eliminar</button>
             </div>
+            </div>
         </div>
-                </div>
 
-                <!-- 🔹 Response Modal (success / error) -->
                 <div v-if="showResponseModal" @click.self="hideResponse" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
                         <div class="px-6 py-4 border-b flex justify-between items-center">

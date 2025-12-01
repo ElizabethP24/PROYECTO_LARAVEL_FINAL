@@ -12,6 +12,10 @@ const props = defineProps({
     token: String,
 });
 
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const form = useForm({
     token: props.token,
     email: props.email,
@@ -20,7 +24,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('password.update'), {
+    form.transform(data => ({ _token: csrf, ...data })).post(route('password.update'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
@@ -35,6 +39,7 @@ const submit = () => {
         </template>
 
         <form @submit.prevent="submit">
+            <input type="hidden" name="_token" :value="csrf" />
             <div>
                 <InputLabel for="email" value="Email" />
                 <TextInput

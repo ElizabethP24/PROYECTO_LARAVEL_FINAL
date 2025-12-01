@@ -11,6 +11,10 @@ const props = defineProps({
 
 const form = useForm({});
 
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const submit = () => {
     form.post(route('verification.send'));
 };
@@ -35,6 +39,7 @@ const verificationLinkSent = computed(() => props.status === 'verification-link-
         </div>
 
         <form @submit.prevent="submit">
+            <input type="hidden" name="_token" :value="csrf" />
             <div class="mt-4 flex items-center justify-between">
                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                     Resend Verification Email

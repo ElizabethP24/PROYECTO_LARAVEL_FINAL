@@ -11,7 +11,6 @@ class AgendaController extends Controller
 {
     public function index()
     {
-        // Preparar datos para los selects (mapear nombres de columnas a los esperados por la vista)
         $specialties = Specialty::all()->map(function ($s) {
             return [
                 'id' => $s->id_specialty,
@@ -35,8 +34,7 @@ class AgendaController extends Controller
     }
 
     /**
-     * Página pública (landing) con la interfaz de agendamiento.
-     * Usa la misma preparación de datos que `index()` y renderiza la vista pública.
+     * Página pública de agendamiento.
      */
     public function indexPublic()
     {
@@ -72,9 +70,6 @@ class AgendaController extends Controller
         ]);
     }
 
-    /**
-     * Calendario administrativo (acepta ?doctor={slug}).
-     */
     public function calendar(Request $request)
     {
         $slug = $request->query('doctor');
@@ -82,7 +77,6 @@ class AgendaController extends Controller
         if ($slug) {
             $doctor = Doctor::where('slug', $slug)->first();
         }
-
         return inertia('Agenda/Calendar', [
             'doctor' => $doctor,
         ]);

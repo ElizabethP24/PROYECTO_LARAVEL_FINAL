@@ -29,39 +29,28 @@
     // Comprueba si una fecha/hora está en el pasado (no agendable)
     function isSlotDisabled(dateStr, timeStr) {
         try {
-            // Construir Date con formato YYYY-MM-DDTHH:MM:SS local
             const slot = new Date(dateStr + 'T' + timeStr + ':00')
             const now = new Date()
-
-            // Bloquear slots que ya pasaron
             if (slot <= now) return true
-
-            // Si el slot es para el día actual, bloquear si está a menos de 40 minutos
             const todayStr = now.toISOString().split('T')[0]
             if (dateStr === todayStr) {
                 const diffMs = slot - now
                 const min40 = 40 * 60 * 1000
                 if (diffMs < min40) return true
             }
-
             return false
         } catch (e) {
             return false
         }
     }
 
-
-
-    // 📅 Generar semana (offset: 0 = semana actual, +1 siguiente, -1 anterior)
+    // Generar semana (offset: 0 = semana actual, +1 siguiente, -1 anterior)
     function generateWeek(offset = 0) {
         const today = new Date()
         const day = today.getDay()
-        // calcular el lunes de la semana (tratando domingo como día 0)
         const diff = today.getDate() - day + (day === 0 ? -6 : 1) + offset * 7
         const monday = new Date(today)
         monday.setDate(diff)
-
-        // Generar solo lunes a sábado (6 días)
         weekDays.value = Array.from({ length: 6 }, (_, i) => {
             const d = new Date(monday)
             d.setDate(monday.getDate() + i)
@@ -70,21 +59,19 @@
                 value: d.toISOString().split('T')[0],
             }
         })
-
-        // Si ya hay un doctor seleccionado, recargar disponibilidad para la semana
         if (selectedDoctor.value) {
             fetchAvailability(selectedDoctor.value)
         }
     }
 
-    // 🔄 Filtrar doctores al escoger especialidad
+    // Filtrar doctores al escoger especialidad
     watch(selectedSpecialty, (value) => {
         filteredDoctors.value = props.doctors.filter(d => d.specialty_id == value)
         selectedDoctor.value = ''
         availability.value = {}
     })
 
-    // 📡 Cargar disponibilidad semanal
+    //Cargar disponibilidad semanal
     async function fetchAvailability(id) {
         if (!id) return
         loading.value = true
@@ -97,7 +84,6 @@
             loading.value = false
         }
     }
-
     watch(selectedDoctor, (id) => {
         if (!id) return
         fetchAvailability(id)
@@ -108,19 +94,17 @@
         generateWeek(weekOffset.value)
         selectedSlot.value = null
     }
-
     function nextWeek() {
         weekOffset.value += 1
         generateWeek(weekOffset.value)
         selectedSlot.value = null
     }
 
-    // 📨 Enviar cita
+    // Enviar cita
     async function submitAppointment() {
         if (!selectedSlot.value || !selectedDoctor.value || !documentNumber.value) return
         loading.value = true
         try {
-            // Use the public store endpoint so no auth is required
             await router.post('/appointments/store-public', {
                 doctor_id: selectedDoctor.value,
                 date: selectedSlot.value.date,
@@ -128,25 +112,17 @@
                 document: documentNumber.value,
             })
             success.value = true
-            // Limpiar selección y formulario
             selectedSlot.value = null
-
-            // Refrescar disponibilidad para el doctor seleccionado (si existe)
             try {
                 if (selectedDoctor.value) {
                     await fetchAvailability(selectedDoctor.value)
                 }
             } catch (e) {
-                // no bloquear por errores de refresco
                 console.warn('Error refrescando disponibilidad', e)
             }
-
-            // Limpiar número de documento y modal de paciente si estaba abierto
             documentNumber.value = ''
             newPatient.value = { name: '', document: '', email: '', eps: '' }
             showPatientModal.value = false
-
-            // Ocultar mensaje de éxito después de unos segundos
             setTimeout(() => { success.value = false }, 3000)
         } finally {
             loading.value = false
@@ -160,15 +136,12 @@
         try {
             const res = await axios.get('/api/patients/check', { params: { document: documentNumber.value } })
             if (res.data.exists) {
-                // paciente existe, proceder a agendar
                 await submitAppointment()
                 return
             }
-            // abrir modal para crear paciente
             newPatient.value = { name: '', document: documentNumber.value, email: '', eps: '' }
             showPatientModal.value = true
         } catch (e) {
-            // Si la comprobación falla, abrir modal para crear
             newPatient.value = { name: '', document: documentNumber.value, email: '', eps: '' }
             showPatientModal.value = true
         } finally {
@@ -184,12 +157,10 @@
             const res = await axios.post('/api/patients', payload)
             if (res.data && res.data.patient) {
                 showPatientModal.value = false
-                // asegurar documentNumber y proceder a agendar
                 documentNumber.value = res.data.patient.document
                 await submitAppointment()
             }
         } catch (err) {
-            // mostrar errores (simple alert por ahora)
             const msgs = err.response?.data?.errors
             if (msgs) {
                 alert(Object.values(msgs).flat().join('\n'))
@@ -218,7 +189,6 @@
             </div>
         </div>
 
-        <!-- Interfaz de agendamiento incrustada -->
         <div class="py-10 px-6 max-w-5xl mx-auto">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Agendamiento de Citas — Agenda semanal</h2>
             <div class="bg-white rounded-2xl shadow-lg p-8">
@@ -245,9 +215,15 @@
                             <option v-for="d in filteredDoctors" :key="d.id" :value="d.id">{{ d.name }}</option>
                         </select>
                     </div>
-
-                    <!-- 📅 Calendario semanal -->
                     <div>
+                        <div class="text-center mt-4 text-sm text-gray-600">
+                            <span v-if="weekDays.length">Semana: {{ weekDays[0].label }} — {{ weekDays[weekDays.length - 1].label }}</span>
+                        </div>
+                        <div class="flex justify-center mt-3 space-x-3">
+                            <button @click="prevWeek" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">← Semana anterior</button>
+                            <button @click="nextWeek" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Semana siguiente →</button>
+                        </div>
+
                         <h3 class="font-semibold text-gray-700 mb-2">Seleccione día y hora</h3>
                         <div v-if="loading" class="text-center text-gray-500 py-8">Cargando disponibilidad...</div>
 
@@ -275,17 +251,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Rango de semana (debajo del calendario) -->
-                <div class="text-center mt-4 text-sm text-gray-600">
-                    <span v-if="weekDays.length">Semana: {{ weekDays[0].label }} — {{ weekDays[weekDays.length - 1].label }}</span>
-                </div>
-
-                <!-- Botones de navegación de semana (debajo del rango) -->
-                <div class="flex justify-center mt-3 space-x-3">
-                    <button @click="prevWeek" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">← Semana anterior</button>
-                    <button @click="nextWeek" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Semana siguiente →</button>
-                </div>
-
                 <button
                     @click="checkPatientAndProceed"
                     :disabled="!selectedSlot || loading"
@@ -293,7 +258,6 @@
                     {{ loading ? 'Agendando...' : 'Confirmar Cita' }}
                 </button>
 
-                <!-- Modal crear paciente (si no existe) -->
                 <div
                     v-if="showPatientModal"
                     @click.self="showPatientModal = false"

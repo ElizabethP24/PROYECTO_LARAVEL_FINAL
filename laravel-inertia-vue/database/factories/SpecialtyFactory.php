@@ -17,7 +17,31 @@ class SpecialtyFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->unique()->randomElement([
+                'Cardiología',
+                'Dermatología',
+                'Ginecología',
+                'Pediatría',
+                'Medicina General',
+                'Neurología',
+                'Oncología',
+                'Oftalmología',
+                'Otorrinolaringología',
+                'Psiquiatría',
+                'Endocrinología',
+                'Gastroenterología',
+                'Nefrología',
+                'Reumatología',
+                'Urología',
+                'Hematología',
+                'Infectología',
+                'Neumología',
+                'Traumatología',
+                'Cirugía General',
+                'Cirugía Plástica',
+                'Anestesiología',
+                'Medicina Interna'
+            ]),
         ];
     }
 }

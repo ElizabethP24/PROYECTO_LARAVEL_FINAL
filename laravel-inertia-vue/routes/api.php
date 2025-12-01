@@ -45,7 +45,6 @@ Route::post('/patients', function (Request $request) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
     } catch (\Illuminate\Database\QueryException $e) {
-        // Likely a missing table or DB schema issue — return a helpful message for development
         Log::error('Validation database error while creating patient: ' . $e->getMessage(), ['exception' => $e]);
         return response()->json([
             'success' => false,

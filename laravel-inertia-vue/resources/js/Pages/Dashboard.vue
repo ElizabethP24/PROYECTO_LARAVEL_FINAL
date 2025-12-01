@@ -5,7 +5,6 @@ import { BarChart, PieChart, LineChart } from 'vue-chart-3'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
 
-// Accept props from Laravel (Inertia). Fall back to example values when not provided.
 const props = defineProps({
     citasPorEspecialidad: Object,
     citasPorFecha: Object,
@@ -36,7 +35,6 @@ const citasPorFecha = ref(props.citasPorFecha ?? {
     ],
 })
 
-// Force Y axis from 0 to 20 for citasPorFecha and show integer ticks
 const citasPorFechaOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -64,7 +62,6 @@ const estadoCitas = ref(props.estadoCitas ?? {
     ],
 })
 
-// Expect controller to provide percentages (0-100). Fallback uses example percentages.
 const ocupacionMedico = ref(props.ocupacionMedico ?? {
     labels: ['Dr. Pérez', 'Dra. Gómez', 'Dr. Ruiz'],
     datasets: [

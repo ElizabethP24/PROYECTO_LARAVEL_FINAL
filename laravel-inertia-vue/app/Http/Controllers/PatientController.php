@@ -22,34 +22,19 @@ class PatientController extends Controller
             'patients' => Patient::all(),
         ]);
     }
-
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Crear paciente
      */
     public function store(StorePatientRequest $request)
     {
         $validated = $request->validated();
         Patient::create($validated);
-
         return redirect()->route('patients.index')->with('success', 'Paciente creado correctamente.');
     }
 
-    /**
-     * Store a patient from the public agenda (no auth required).
-     * Accepts minimal data and returns JSON with the patient record.
-     */
     public function storePublic(Request $request)
     {
         $data = $request->only(['name', 'document', 'email', 'eps']);
-
         $validator = Validator::make($data, [
             'document' => ['required', 'numeric'],
             'name' => ['nullable', 'string', 'max:255'],
@@ -60,12 +45,10 @@ class PatientController extends Controller
             'document.numeric' => 'El documento debe ser numérico.',
             'email.email' => 'El correo electrónico debe ser una dirección válida.',
         ]);
-
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // FirstOrCreate by document to avoid duplicates
         $patient = Patient::firstOrCreate(
             ['document' => $data['document']],
             [
@@ -74,8 +57,6 @@ class PatientController extends Controller
                 'eps' => $data['eps'] ?? null,
             ]
         );
-
-        // If the record existed but we received additional info, try to update it
         $updated = false;
         if (!empty($data['name']) && $patient->name !== $data['name']) {
             $patient->name = $data['name'];

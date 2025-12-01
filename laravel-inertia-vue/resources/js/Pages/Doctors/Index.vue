@@ -7,13 +7,10 @@ import { saveAs } from 'file-saver'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-    // ✅ Recibir props desde Laravel
     const props = defineProps({
     doctors: { type: Array, default: () => [] },
     specialties: { type: Array, default: () => [] },
     })
-
-    // ✅ Leer mensajes flash (opcional)
     const page = usePage()
     const flashMessage = ref('')
     const flashType = ref('success')
@@ -34,7 +31,6 @@ import autoTable from 'jspdf-autotable'
     const showEditModal = ref(false)
     const showDeleteModal = ref(false)
     const selectedDoctor = ref(null)
-
     const newDoctor = ref({
     name: '',
     document: '',
@@ -73,7 +69,6 @@ import autoTable from 'jspdf-autotable'
     }
 
     const updateDoctor = () => {
-    // Use slug for route binding if available (routes are scoped by slug); fall back to id
     const doctorParam = selectedDoctor.value.slug ?? selectedDoctor.value.id_doctor
     router.put(route('doctors.update', doctorParam), selectedDoctor.value, {
         onSuccess: () => {
@@ -94,7 +89,6 @@ import autoTable from 'jspdf-autotable'
     })
     }
 
-    // Response modal state and helpers (same UX as Patients page)
     const showResponseModal = ref(false)
     const responseType = ref('success')
     const responseMessage = ref('')

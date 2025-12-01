@@ -10,6 +10,10 @@ import TextInput from '@/Components/TextInput.vue';
 
 const recovery = ref(false);
 
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const form = useForm({
     code: '',
     recovery_code: '',
@@ -33,7 +37,7 @@ const toggleRecovery = async () => {
 };
 
 const submit = () => {
-    form.post(route('two-factor.login'));
+    form.transform(data => ({ _token: csrf, ...data })).post(route('two-factor.login'));
 };
 </script>
 
@@ -56,6 +60,7 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit">
+            <input type="hidden" name="_token" :value="csrf" />
             <div v-if="! recovery">
                 <InputLabel for="code" value="Code" />
                 <TextInput

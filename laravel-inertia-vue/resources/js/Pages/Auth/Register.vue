@@ -8,6 +8,10 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const form = useForm({
     name: '',
     email: '',
@@ -17,9 +21,10 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
+    form.transform(data => ({ _token: csrf, ...data }))
+        .post(route('register'), {
+            onFinish: () => form.reset('password', 'password_confirmation'),
+        });
 };
 </script>
 
@@ -32,6 +37,7 @@ const submit = () => {
         </template>
 
         <form @submit.prevent="submit">
+            <input type="hidden" name="_token" :value="csrf" />
             <div>
                 <InputLabel for="name" value="Name" />
                 <TextInput
