@@ -4,6 +4,10 @@
     import axios from 'axios'
     import { router } from '@inertiajs/vue3'
 
+    const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
     const props = defineProps({
         appointments: Array,
     })
@@ -48,7 +52,7 @@
     async function approveAppointment(id) {
     loading.value = true
     try {
-        await axios.post(`/appointments/${id}/approve`)
+        await axios.post(`/appointments/${id}/approve`, { _token: csrf })
         const idx = findIndexById(id)
         if (idx !== -1) appointmentsList.value[idx].status = 'approved'
         successMessage.value = 'Cita aprobada'
@@ -62,7 +66,7 @@
     async function completeAppointment(id) {
     loading.value = true
     try {
-        await axios.post(`/appointments/${id}/complete`)
+        await axios.post(`/appointments/${id}/complete`, { _token: csrf })
         const idx = findIndexById(id)
         if (idx !== -1) appointmentsList.value[idx].status = 'completed'
         successMessage.value = 'Cita marcada como completada'
@@ -76,7 +80,7 @@
     async function denyAppointment(id) {
     loading.value = true
     try {
-        await axios.post(`/appointments/${id}/deny`)
+        await axios.post(`/appointments/${id}/deny`, { _token: csrf })
         const idx = findIndexById(id)
         if (idx !== -1) appointmentsList.value[idx].status = 'rejected'
         successMessage.value = 'Cita denegada'
@@ -90,7 +94,7 @@
     async function deleteAppointment(id) {
         loading.value = true
         try {
-            await axios.delete(`/appointments/${id}`)
+            await axios.delete(`/appointments/${id}`, { data: { _token: csrf } })
             const idx = findIndexById(id)
             if (idx !== -1) appointmentsList.value.splice(idx, 1)
             if (page.value > totalPages.value) page.value = totalPages.value

@@ -7,12 +7,20 @@ use Illuminate\Http\Request;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
 
     public function index(Request $request)
     {
+        // Redirect doctors to their own agenda instead of showing the admin dashboard
+        $user = Auth::user();
+        if ($user && $user->role === 'doctor') {
+            $doctor = Doctor::where('user_id', $user->id)->first();
+            $param = $doctor ? $doctor->slug : $user->id;
+            return redirect()->route('doctors.agenda', $param);
+        }
         // Citas por especialidad
         $bySpecialty = Appointment::selectRaw('specialties.name as name, count(*) as total')
             ->join('specialties', 'appointments.id_specialty', '=', 'specialties.id_specialty')
@@ -31,32 +39,35 @@ class DashboardController extends Controller
             ],
         ];
 
-        // Citas por fecha (últimos 7 días)
-        $end = Carbon::now()->toDateString();
-        $start = Carbon::now()->subDays(6)->toDateString();
+        // Citas por mes (últimos 12 meses)
+        $endMonth = Carbon::now()->endOfMonth();
+        $startMonth = Carbon::now()->subMonths(11)->startOfMonth();
 
-        $byDate = Appointment::selectRaw('date, count(*) as total')
-            ->whereBetween('date', [$start, $end])
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $dates = collect();
-        for ($d = Carbon::parse($start); $d->lte(Carbon::parse($end)); $d->addDay()) {
-            $dates->push($d->toDateString());
+        $months = collect();
+        $cursor = $startMonth->copy();
+        while ($cursor->lte($endMonth)) {
+            $months->push($cursor->copy());
+            $cursor->addMonth();
         }
-        $dateTotals = $dates->map(function ($dt) use ($byDate) {
-            $found = $byDate->firstWhere('date', $dt);
-            return $found ? (int) $found->total : 0;
-        });
+
+        // Labels in Spanish (e.g., "Noviembre 2025")
+        $monthLabels = $months->map(function ($m) {
+            return ucfirst($m->locale('es')->isoFormat('MMMM YYYY'));
+        })->toArray();
+        $monthTotals = $months->map(function ($m) {
+            $start = $m->copy()->startOfMonth()->toDateString();
+            $end = $m->copy()->endOfMonth()->toDateString();
+            return Appointment::whereBetween('date', [$start, $end])->count();
+        })->toArray();
 
         $citasPorFecha = [
-            'labels' => $dates->toArray(),
+            'labels' => $monthLabels,
             'datasets' => [
                 [
-                    'label' => 'Citas diarias',
-                    'data' => $dateTotals->toArray(),
+                    'label' => 'Citas por mes',
+                    'data' => $monthTotals,
                     'backgroundColor' => '#f6c23e',
+                    'fill' => false,
                 ],
             ],
         ];

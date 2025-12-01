@@ -24,20 +24,16 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    \App\Http\Middleware\AllowOnlyAgendaForDoctor::class,
 ])->group(function () {
 
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
     Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
     Route::get('/home', [AppointmentController::class, 'adminHome'])->name('home');
-
     Route::resource('patients', PatientController::class);
     Route::resource('doctors', DoctorController::class)->scoped(['doctor' => 'slug']);
-
-    // Página de agenda por médico (ruta administrativa)
     Route::get('/doctors/{doctor}/agenda', [DoctorController::class, 'showAgenda'])->name('doctors.agenda');
-
     Route::resource('appointments', AppointmentController::class);
     Route::post('/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])->name('appointments.approve');
     Route::post('/appointments/{appointment}/deny', [AppointmentController::class, 'deny'])->name('appointments.deny');

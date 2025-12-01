@@ -103,13 +103,29 @@ class DoctorController extends Controller
      */
     public function showAgenda(Doctor $doctor)
     {
-        $doctors = Doctor::where('status', 'Activo')->get()->map(function ($d) {
-            return [
-                'id' => $d->id_doctor,
-                'name' => $d->name,
-                'slug' => $d->slug ?? null,
-            ];
-        });
+        // If the current user is a doctor, restrict the view to their own agenda
+        $user = Auth::user();
+        if ($user && $user->role === 'doctor') {
+            $ownDoctor = Doctor::where('user_id', $user->id)->firstOrFail();
+            // If they tried to access another doctor's agenda, redirect to their own
+            if ($ownDoctor->id_doctor !== $doctor->id_doctor) {
+                return redirect()->route('doctors.agenda', $ownDoctor->slug);
+            }
+
+            $doctors = collect([[
+                'id' => $ownDoctor->id_doctor,
+                'name' => $ownDoctor->name,
+                'slug' => $ownDoctor->slug ?? null,
+            ]]);
+        } else {
+            $doctors = Doctor::where('status', 'Activo')->get()->map(function ($d) {
+                return [
+                    'id' => $d->id_doctor,
+                    'name' => $d->name,
+                    'slug' => $d->slug ?? null,
+                ];
+            });
+        }
         $workStart = env('WORK_START', '08:00');
         $workEnd = env('WORK_END', '17:00');
         $slotMinutes = (int) env('APPOINTMENT_DURATION_MINUTES', 20);

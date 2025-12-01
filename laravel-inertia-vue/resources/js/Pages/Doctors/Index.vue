@@ -80,7 +80,8 @@ import autoTable from 'jspdf-autotable'
     }
 
     const deleteDoctor = () => {
-    router.delete(route('doctors.destroy', selectedDoctor.value.id_doctor), {
+    const doctorParam = selectedDoctor.value.slug ?? selectedDoctor.value.id_doctor
+    router.delete(route('doctors.destroy', doctorParam), {
         onSuccess: () => {
         closeAllModals()
         showResponse('success', 'Médico eliminado correctamente.')

@@ -19,3 +19,8 @@ const xsrf = readCookie('XSRF-TOKEN')
 if (xsrf && !window.axios.defaults.headers.common['X-XSRF-TOKEN']) {
 	window.axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrf
 }
+
+// Also set X-XSRF-TOKEN from the meta tag if cookie is not present
+if (!window.axios.defaults.headers.common['X-XSRF-TOKEN'] && tokenMeta) {
+    window.axios.defaults.headers.common['X-XSRF-TOKEN'] = tokenMeta.getAttribute('content')
+}

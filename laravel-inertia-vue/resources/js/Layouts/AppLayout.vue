@@ -13,14 +13,19 @@ const isDoctor = computed(() => {
         return false
     }
 })
+const csrf = typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
 const logout = () => {
     try {
         const logoutUrl = (typeof route === 'function') ? route('logout') : '/logout'
         console.debug('[AppLayout] logging out to', logoutUrl)
-        router.post(logoutUrl)
+        // send token in body as well to avoid TokenMismatch if headers/cookies were not sent
+        router.post(logoutUrl, { _token: csrf })
     } catch (e) {
         console.error('[AppLayout] logout failed, falling back to /logout', e)
-        router.post('/logout')
+        router.post('/logout', { _token: csrf })
     }
 }
 </script>
